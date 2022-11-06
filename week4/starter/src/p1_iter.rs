@@ -29,8 +29,67 @@
 //! To get you started, I would read Rust's documentation on how to implement an iterator:
 //! https://doc.rust-lang.org/std/iter/index.html#implementing-iterator
 
+trait Cartesian<T: Clone> {
+    fn cartesian_product<U: Clone>(
+        self: Self,
+        iterator: impl Iterator<Item = U>,
+    ) -> CartesianProduct<T, U>;
+}
 
-// Your implementation goes here!
+struct CartesianProduct<T: Clone, U: Clone> {
+    first: Vec<T>,
+    second: Vec<U>,
+    i1: usize,
+    i2: usize,
+}
+
+impl<T: Clone, U: Clone> CartesianProduct<T, U> {
+    fn new(
+        iterator1: impl Iterator<Item = T>,
+        iterator2: impl Iterator<Item = U>,
+    ) -> CartesianProduct<T, U> {
+        let first: Vec<T> = iterator1.collect();
+        let second: Vec<U> = iterator2.collect();
+        return CartesianProduct {
+            first: first,
+            second: second,
+            i1: 0,
+            i2: 0,
+        };
+    }
+}
+
+impl<T: Clone, U: Clone> Iterator for CartesianProduct<T, U> {
+    type Item = (T, U);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.first.len() == 0 || self.second.len() == 0 {
+            return None;
+        }
+        while self.i1 < self.first.len() {
+            if self.i2 == self.second.len() {
+                self.i2 = 0;
+                self.i1 += 1;
+                continue;
+            }
+            self.i2 += 1;
+            return Some((
+                self.first[self.i1].clone(),
+                self.second[self.i2 - 1].clone(),
+            ));
+        }
+        return None;
+    }
+}
+
+impl<S: Iterator<Item = T>, T: Clone> Cartesian<T> for S {
+    fn cartesian_product<U: Clone>(
+        self,
+        iterator: impl Iterator<Item = U>,
+    ) -> CartesianProduct<T, U> {
+        return CartesianProduct::new(self, iterator);
+    }
+}
 
 #[cfg(test)]
 mod test {
