@@ -36,14 +36,14 @@ trait Cartesian<T: Clone> {
     ) -> CartesianProduct<T, U>;
 }
 
-struct CartesianProduct<T: Clone, U: Clone> {
+struct CartesianProduct<T, U> {
     first: Vec<T>,
     second: Vec<U>,
     i1: usize,
     i2: usize,
 }
 
-impl<T: Clone, U: Clone> CartesianProduct<T, U> {
+impl<T, U> CartesianProduct<T, U> {
     fn new(
         iterator1: impl Iterator<Item = T>,
         iterator2: impl Iterator<Item = U>,
@@ -63,22 +63,19 @@ impl<T: Clone, U: Clone> Iterator for CartesianProduct<T, U> {
     type Item = (T, U);
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.first.len() == 0 || self.second.len() == 0 {
+        if self.i1 == self.first.len() || self.second.len() == 0 {
             return None;
         }
-        while self.i1 < self.first.len() {
-            if self.i2 == self.second.len() {
-                self.i2 = 0;
-                self.i1 += 1;
-                continue;
-            }
+        let pair = (self.first[self.i1].clone(), self.second[self.i2].clone());
+
+        if self.i2 == self.second.len() - 1 {
+            self.i2 = 0;
+            self.i1 += 1;
+        } else {
             self.i2 += 1;
-            return Some((
-                self.first[self.i1].clone(),
-                self.second[self.i2 - 1].clone(),
-            ));
         }
-        return None;
+
+        Some(pair)
     }
 }
 
