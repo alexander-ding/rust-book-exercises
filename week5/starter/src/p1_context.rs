@@ -19,22 +19,46 @@
 //! define the type signature and implementation of each function.
 //!
 //! To simplify your implementation, you get to assume `T: Copy`. Note that to make using `Context`
-//! thread-safe, if you need to use interior mutability, you should use a 
+//! thread-safe, if you need to use interior mutability, you should use a
 //! [`Mutex`](https://doc.rust-lang.org/std/sync/struct.Mutex.html) instead of a `RefCell`.
 
+use std::sync::{Arc, Mutex};
 
 pub struct Context<T> {
-    values: () // TODO
+    values: Arc<Mutex<Vec<T>>>,
 }
 
 impl<T: Copy> Context<T> {
-    pub fn new() {} // TODO
+    pub fn new() -> Context<T> {
+        Context {
+            values: Arc::new(Mutex::new(vec![])),
+        }
+    }
 
-    pub fn set() {} // TODO
+    pub fn set(self: &Self, value: T) -> ContextScope<T> {
+        let mut values = self.values.lock().unwrap();
+        values.push(value);
+        ContextScope {
+            values: Arc::clone(&self.values),
+        }
+    }
 
-    pub fn get() {} // TODO
+    pub fn get(self: &Self) -> Option<T> {
+        let values = self.values.lock().unwrap();
+        values.last().copied()
+    }
 }
 
+pub struct ContextScope<T> {
+    values: Arc<Mutex<Vec<T>>>,
+}
+
+impl<T> Drop for ContextScope<T> {
+    fn drop(&mut self) {
+        let mut values = self.values.lock().unwrap();
+        values.pop();
+    }
+}
 
 #[cfg(test)]
 mod test {

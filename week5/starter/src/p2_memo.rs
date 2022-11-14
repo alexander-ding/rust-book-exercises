@@ -7,7 +7,7 @@
 //! We have provided you a basic skeleton for the data structure, and a set of unit tests
 //! that define the specification. `memo = Memo::new(f)` should produce a memoized version of
 //! a function `f` such that if `f(input)` is `output`, then `memo.call(input)` is `&output`.
-//! That is, the Memo structure returns immutable references to cached outputs.
+//! That is, the Mem qo structure returns immutable references to cached outputs.
 //!
 //! Your task is to design the cache and implement the `new` and `call` functions to pass
 //! the unit tests. Some considerations:
@@ -15,38 +15,53 @@
 //! * While `Memo::call` may mutate its interior state, a user of `Memo` should not have to
 //!   care about that mutability -- `Memo::call` should work even if `Memo` is outwardly immutable.
 //!   Consider a `RefCell`!
-//! 
+//!
 //! * If you store a collection of outputs in the cache, remember that mutations to collections
 //!   can cause them to reallocate (e.g. `Vec::push`, `HashMap::insert`, etc.). So any *direct*
 //!   references to collection items will be invalidated. Take a look at the Pin data structure:
 //!   <https://doc.rust-lang.org/std/pin/index.html>
-//! 
+//!
 //! * You may need to convince Rust that a variable lives longer than its given lifetime.
 //!   You can use the unsafe operation [`mem::transmute`](https://doc.rust-lang.org/std/mem/fn.transmute.html)
 //!   for this. But beware! Only use `transmute` with the utmost caution!
-//! 
+//!
 //! Note that there is a unit test `memo_scope_test` that is commented out. It *should not compile*.
 //! So you can try commenting it in, and verifying that you get a compiler error.
 
+use std::{
+    cell::{Ref, RefCell},
+    collections::HashMap,
+    hash::Hash,
+    pin::Pin,
+};
 
 pub struct Memo<Func, Input, Output> {
     func: Func,
-    cache: () // TODO
+    cache: RefCell<HashMap<Input, Pin<Box<Output>>>>, // TODO
 }
 
 impl<Func, Input, Output> Memo<Func, Input, Output>
 where
     Func: Fn(Input) -> Output,
+    Input: Hash + Eq + Copy,
 {
     pub fn new(func: Func) -> Self {
         Memo {
             func,
-            cache: () // TODO
+            cache: RefCell::new(HashMap::new()), // TODO
         }
     }
 
-
-    pub fn call() {} // TODO
+    pub fn call<'a>(self: &'a Self, input: Input) -> &'a Output {
+        let mut cache = self.cache.borrow_mut();
+        if let None = cache.get(&input) {
+            let output = (self.func)(input);
+            cache.insert(input, Box::pin(output));
+        }
+        let output = cache.get(&input).unwrap();
+        let output = unsafe { std::mem::transmute::<&Output, &'a Output>(output) };
+        output
+    } // TODO
 }
 /* END SOLUTION */
 
