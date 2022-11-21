@@ -48,7 +48,7 @@ where
     pub fn new(func: Func) -> Self {
         Memo {
             func,
-            cache: RefCell::new(HashMap::new()), // TODO
+            cache: RefCell::default(), // TODO
         }
     }
 

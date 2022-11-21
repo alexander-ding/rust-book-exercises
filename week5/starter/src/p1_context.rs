@@ -22,25 +22,23 @@
 //! thread-safe, if you need to use interior mutability, you should use a
 //! [`Mutex`](https://doc.rust-lang.org/std/sync/struct.Mutex.html) instead of a `RefCell`.
 
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 
 pub struct Context<T> {
-    values: Arc<Mutex<Vec<T>>>,
+    values: Mutex<Vec<T>>,
 }
 
 impl<T: Copy> Context<T> {
     pub fn new() -> Context<T> {
         Context {
-            values: Arc::new(Mutex::new(vec![])),
+            values: Mutex::new(vec![]),
         }
     }
 
-    pub fn set(self: &Self, value: T) -> ContextScope<T> {
+    pub fn set(self: &Self, value: T) -> ContextGuard<T> {
         let mut values = self.values.lock().unwrap();
         values.push(value);
-        ContextScope {
-            values: Arc::clone(&self.values),
-        }
+        ContextGuard { ctx: self }
     }
 
     pub fn get(self: &Self) -> Option<T> {
@@ -49,13 +47,13 @@ impl<T: Copy> Context<T> {
     }
 }
 
-pub struct ContextScope<T> {
-    values: Arc<Mutex<Vec<T>>>,
+pub struct ContextGuard<'a, T> {
+    ctx: &'a Context<T>,
 }
 
-impl<T> Drop for ContextScope<T> {
+impl<T> Drop for ContextGuard<'_, T> {
     fn drop(&mut self) {
-        let mut values = self.values.lock().unwrap();
+        let mut values = self.ctx.values.lock().unwrap();
         values.pop();
     }
 }
